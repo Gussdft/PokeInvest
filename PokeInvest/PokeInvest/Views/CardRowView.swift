@@ -284,7 +284,13 @@ struct SetsListView: View {
                 ForEach(sets.sorted(by: { ($0.releaseDate ?? "0000") > ($1.releaseDate ?? "0000") })) { set in
                     NavigationLink(destination: CardsGridView(set: set)) {
                         HStack(spacing: 16) {
-                            ZStack { Color.white; if let logo = set.logo { AsyncImage(url: URL(string: "\(logo).png")) { i in i.resizable().scaledToFit() } placeholder: { Color.clear }.padding(4) } }.frame(width: 80, height: 45).cornerRadius(8)
+                            ZStack {
+                                Color.white
+                                if let logo = set.logo {
+                                    let logoURL = logo.hasSuffix(".png") ? logo : "\(logo).png"
+                                    AsyncImage(url: URL(string: logoURL)) { i in i.resizable().scaledToFit() } placeholder: { Color.clear }.padding(4)
+                                }
+                            }.frame(width: 80, height: 45).cornerRadius(8)
                             VStack(alignment: .leading) { Text(set.name).font(.headline).foregroundStyle(.white); if let d = set.releaseDate { Text(d).font(.caption2).foregroundStyle(.gray) } }
                         }.padding(.vertical, 6)
                     }.listRowBackground(Color.clear)
@@ -316,6 +322,9 @@ struct CardsGridView: View {
                                     HStack {
                                         Text(card.localId ?? "").font(.caption2).bold().foregroundStyle(.gray)
                                         Spacer()
+                                        if let price = card.marketPrice {
+                                            Text(String(format: "%.2f€", price)).font(.caption2).foregroundStyle(.green)
+                                        }
                                         if let rare = card.rarity { Circle().fill(rare.contains("Rare") ? Color.yellow : Color.gray).frame(width: 6, height: 6) }
                                     }.padding(.horizontal, 4)
                                 }
@@ -374,7 +383,7 @@ struct APISearchView: View {
             rarity: apiCard.rarity ?? "Commune",
             condition: .nearMint,
             purchasePrice: 0.0,
-            estimatedValue: 0.0,
+            estimatedValue: apiCard.marketPrice ?? 0.0,
             imageURL: apiCard.imageURL?.absoluteString
         )
         modelContext.insert(newCard)
@@ -407,6 +416,9 @@ struct CardAddSheet: View {
                 Section("Détails") {
                     Text(card.name).font(.title3).bold()
                     Text("\(card.set?.name ?? "") • #\(card.localId ?? "")").foregroundStyle(.gray)
+                    if let price = card.marketPrice {
+                        LabeledContent("Cotation (Cardmarket)", value: String(format: "%.2f €", price))
+                    }
                 }
                 
                 Section("Ma Carte") {
